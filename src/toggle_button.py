@@ -2,6 +2,7 @@ from PyQt6.QtGui import QPainter, QPen, QColor, QBrush
 from PyQt6.QtCore import QSize, QPointF, Qt, QTimeLine, QEasingCurve, QTimer
 from PyQt6.QtWidgets import QWidget
 from toggle_button_state import ToggleButtonState
+from utils import Utils
 
 
 class ToggleButton(QWidget):
@@ -28,6 +29,10 @@ class ToggleButton(QWidget):
         self.circle_opacity_timeline = QTimeLine(200, self)
         self.circle_opacity_timeline.setFrameRange(0, 255)
 
+        self.icon_rotation_timeline = QTimeLine(200, self)
+        self.icon_rotation_timeline.setEasingCurve(QEasingCurve.Type.Linear)
+        self.icon_rotation_timeline.setFrameRange(90 * 10, 270 * 10)
+
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
@@ -47,14 +52,13 @@ class ToggleButton(QWidget):
         pen.setColor(QColor('#000000'))
         painter.setPen(pen)
         painter.drawLine(QPointF(self.fixed_size.width() / 2, self.fixed_size.height() / 2),
-                         QPointF(self.fixed_size.width() / 2, self.fixed_size.height() / 2 + 28))
+                         Utils.get_point_on_circle(QPointF(self.fixed_size.width() / 2, self.fixed_size.height() / 2), 28, self.icon_rotation_timeline.currentFrame() / 10))
 
         pen.setCapStyle(Qt.PenCapStyle.SquareCap)
         pen.setColor(QColor('#000000'))
         pen.setWidth(3)
         painter.setPen(pen)
-        painter.drawArc(24, 24, 38, 38, -109 * 16, -322 * 16)
-        #painter.drawArc(24, 24, 38, 38, 71 * 16, -322 * 16)
+        painter.drawArc(24, 24, 38, 38, (-109 - (int(self.icon_rotation_timeline.currentFrame() / 10) - 90)) * 16, -322 * 16)
 
         if self.state == ToggleButtonState.TURNING_ON:
             pen.setColor(QColor(159, 253, 217, self.circle_opacity_timeline.currentFrame()))
@@ -92,6 +96,9 @@ class ToggleButton(QWidget):
             self.circle_opacity_timeline.setEasingCurve(QEasingCurve.Type.OutQuint)
             self.circle_opacity_timeline.start()
 
+            self.icon_rotation_timeline.setDirection(QTimeLine.Direction.Forward)
+            self.icon_rotation_timeline.start()
+
             timer = QTimer(self)
             timer.setSingleShot(True)
             def toggle_button_state_on(): self.state = ToggleButtonState.ON
@@ -106,3 +113,6 @@ class ToggleButton(QWidget):
             self.circle_opacity_timeline.setDirection(QTimeLine.Direction.Backward)
             self.circle_opacity_timeline.setEasingCurve(QEasingCurve.Type.InQuad)
             self.circle_opacity_timeline.start()
+
+            self.icon_rotation_timeline.setDirection(QTimeLine.Direction.Backward)
+            self.icon_rotation_timeline.start()
