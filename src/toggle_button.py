@@ -1,11 +1,15 @@
 from PyQt6.QtGui import QPainter, QPen, QColor, QBrush
-from PyQt6.QtCore import QPointF, Qt, QTimeLine, QEasingCurve, QTimer, QRectF
+from PyQt6.QtCore import QPointF, Qt, QTimeLine, QEasingCurve, QRectF, pyqtSignal
 from PyQt6.QtWidgets import QWidget
 from toggle_button_state import ToggleButtonState
 from utils import Utils
 
 
 class ToggleButton(QWidget):
+
+    # Signals
+    clicked = pyqtSignal()
+    stateChanged = pyqtSignal(ToggleButtonState)
 
     # Constants
     ACCENT_COLOR_ON = QColor('#61ff8a')
@@ -64,7 +68,7 @@ class ToggleButton(QWidget):
         # Draw straight line of the icon
         icon_line_width = 3.0
         icon_straight_line_length = 25
-        icon_straight_line_angle = self.icon_rotation_timeline.currentFrame() / self.TIMELINE_ACCURACY_BOOST + 90
+        icon_straight_line_angle = 90 + self.icon_rotation_timeline.currentFrame() / self.TIMELINE_ACCURACY_BOOST
         icon_straight_line_point = Utils.get_point_on_circle(center, icon_straight_line_length,
                                                              icon_straight_line_angle)
 
@@ -92,7 +96,7 @@ class ToggleButton(QWidget):
         outer_circle_rect = QRectF(outer_circle_offset, outer_circle_offset,
                                    outer_circle_rect_size, outer_circle_rect_size)
 
-        # Currently turning on
+        # State TURNING_ON
         if self.state == ToggleButtonState.TURNING_ON:
             # Set current color
             if self.current_color != self.ACCENT_COLOR_TURNING_ON:
@@ -109,9 +113,9 @@ class ToggleButton(QWidget):
             painter.drawArc(outer_circle_rect, outer_half_circle_1_start_angle, outer_half_circle_span_angle)
             painter.drawArc(outer_circle_rect, outer_half_circle_2_start_angle, outer_half_circle_span_angle)
 
-        # Turned on or off
+        # State ON or OFF
         else:
-            # Set current color if turned on
+            # Set current color if turned on and not already set
             if self.state == ToggleButtonState.ON:
                 if self.current_color != self.ACCENT_COLOR_ON:
                     self.current_color = self.ACCENT_COLOR_ON
@@ -130,45 +134,69 @@ class ToggleButton(QWidget):
         painter.end()
 
     def mousePressEvent(self, event):
-        # Currently turned off -> turn on
         if self.state == ToggleButtonState.OFF:
-            self.state = ToggleButtonState.TURNING_ON
-
-            # Start timelines
-            self.outer_circle_rotation_timeline.start()
-
-            self.outer_circle_width_timeline.setDirection(QTimeLine.Direction.Forward)
-            self.outer_circle_width_timeline.start()
-
-            self.outer_circle_opacity_timeline.setDirection(QTimeLine.Direction.Forward)
-            self.outer_circle_opacity_timeline.setEasingCurve(QEasingCurve.Type.OutQuint)
-            self.outer_circle_opacity_timeline.start()
-
-            self.icon_rotation_timeline.setDirection(QTimeLine.Direction.Forward)
-            self.icon_rotation_timeline.start()
-
-            # Temporary
-            timer = QTimer(self)
-            timer.setSingleShot(True)
-            timer.timeout.connect(self.toggle_button_state_on)
-            timer.start(2000)
-
-        # Currently turned on -> turn off
+            # Currently turned off -> turn on
+            self.setState(ToggleButtonState.TURNING_ON)
         else:
-            self.state = ToggleButtonState.OFF
+            # Currently turned on or turning on -> turn off
+            self.setState(ToggleButtonState.OFF)
 
-            # Start timelines
-            self.outer_circle_width_timeline.setDirection(QTimeLine.Direction.Backward)
-            self.outer_circle_width_timeline.start()
+        # Emit clicked signal
+        self.clicked.emit()
 
-            self.outer_circle_opacity_timeline.setDirection(QTimeLine.Direction.Backward)
-            self.outer_circle_opacity_timeline.setEasingCurve(QEasingCurve.Type.InQuad)
-            self.outer_circle_opacity_timeline.start()
+    def getState(self) -> ToggleButtonState:
+        return self.state
 
-            self.icon_rotation_timeline.setDirection(QTimeLine.Direction.Backward)
-            self.icon_rotation_timeline.start()
+    def setState(self, state: ToggleButtonState):
+        # Set new state
+        current_state = self.state
+        if current_state == state:
+            # Return if current state is already the new state
+            return
+        self.state = state
 
-    # Temporary
-    def toggle_button_state_on(self):
-        if self.state == ToggleButtonState.TURNING_ON:
-            self.state = ToggleButtonState.ON
+        # Start animation depending on new state and current state
+        if current_state == ToggleButtonState.OFF:
+            if state == ToggleButtonState.TURNING_ON:
+                self.start_animation_forward()
+            elif state == ToggleButtonState.ON:
+                self.start_animation_forward()
+        elif current_state == ToggleButtonState.TURNING_ON:
+            if state == ToggleButtonState.OFF:
+                self.start_animation_backward()
+        elif current_state == ToggleButtonState.ON:
+            if state == ToggleButtonState.OFF:
+                self.start_animation_backward()
+            elif state == ToggleButtonState.TURNING_ON:
+                self.start_animation_forward()
+
+        # Emit state changed signal
+        self.stateChanged.emit(self.state)
+
+    def start_animation_forward(self):
+        # Start outer circle animation timelines
+        self.outer_circle_rotation_timeline.start()
+
+        self.outer_circle_width_timeline.setDirection(QTimeLine.Direction.Forward)
+        self.outer_circle_width_timeline.start()
+
+        self.outer_circle_opacity_timeline.setDirection(QTimeLine.Direction.Forward)
+        self.outer_circle_opacity_timeline.setEasingCurve(QEasingCurve.Type.OutQuint)
+        self.outer_circle_opacity_timeline.start()
+
+        # Start icon animation timeline
+        self.icon_rotation_timeline.setDirection(QTimeLine.Direction.Forward)
+        self.icon_rotation_timeline.start()
+
+    def start_animation_backward(self):
+        # Start outer circle animation timelines
+        self.outer_circle_width_timeline.setDirection(QTimeLine.Direction.Backward)
+        self.outer_circle_width_timeline.start()
+
+        self.outer_circle_opacity_timeline.setDirection(QTimeLine.Direction.Backward)
+        self.outer_circle_opacity_timeline.setEasingCurve(QEasingCurve.Type.InQuad)
+        self.outer_circle_opacity_timeline.start()
+
+        # Start icon animation timeline
+        self.icon_rotation_timeline.setDirection(QTimeLine.Direction.Backward)
+        self.icon_rotation_timeline.start()
