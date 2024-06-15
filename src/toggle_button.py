@@ -14,7 +14,6 @@ class ToggleButton(QWidget):
     # Constants
     ACCENT_COLOR_ON = QColor('#61ff8a')
     ACCENT_COLOR_TURNING_ON = QColor('#9ffdd9')
-    TIMELINE_ACCURACY_BOOST = 10
 
     def __init__(self, parent=None):
         super(ToggleButton, self).__init__()
@@ -29,16 +28,16 @@ class ToggleButton(QWidget):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         # Timeline for the outer circle rotation animation
-        self.outer_circle_rotation_timeline = QTimeLine(3000, self)
+        self.outer_circle_rotation_timeline = QTimeLine(700, self)
         self.outer_circle_rotation_timeline.setEasingCurve(QEasingCurve.Type.Linear)
-        self.outer_circle_rotation_timeline.setFrameRange(-360 * 16, 360 * 16)
+        self.outer_circle_rotation_timeline.setFrameRange(0, 170)
         self.outer_circle_rotation_timeline.frameChanged.connect(self.update)
         self.outer_circle_rotation_timeline.finished.connect(self.outer_circle_rotation_timeline.start)
 
         # Timeline for the outer circle width animation
         self.outer_circle_width_timeline = QTimeLine(250, self)
         self.outer_circle_width_timeline.setEasingCurve(QEasingCurve.Type.Linear)
-        self.outer_circle_width_timeline.setFrameRange(0, 4 * self.TIMELINE_ACCURACY_BOOST)
+        self.outer_circle_width_timeline.setFrameRange(0, 4 * 10)
 
         # Timeline for the outer circle opacity animation
         self.outer_circle_opacity_timeline = QTimeLine(200, self)
@@ -47,7 +46,7 @@ class ToggleButton(QWidget):
         # Timeline for the icon rotation animation
         self.icon_rotation_timeline = QTimeLine(200, self)
         self.icon_rotation_timeline.setEasingCurve(QEasingCurve.Type.Linear)
-        self.icon_rotation_timeline.setFrameRange(0, 180 * self.TIMELINE_ACCURACY_BOOST)
+        self.icon_rotation_timeline.setFrameRange(0, 180)
 
     def paintEvent(self, event):
         # Start painter and set render hint to Antialiasing for better quality
@@ -68,7 +67,7 @@ class ToggleButton(QWidget):
         # Draw straight line of the icon
         icon_line_width = 3.0
         icon_straight_line_length = 25
-        icon_straight_line_angle = 90 + self.icon_rotation_timeline.currentFrame() / self.TIMELINE_ACCURACY_BOOST
+        icon_straight_line_angle = 90 + self.icon_rotation_timeline.currentFrame()
         icon_straight_line_point = Utils.get_point_on_circle(center, icon_straight_line_length,
                                                              icon_straight_line_angle)
 
@@ -81,15 +80,14 @@ class ToggleButton(QWidget):
         icon_arched_line_offset = (self.fixed_size - icon_arched_line_rect_size) / 2
         icon_arched_line_rect = QRectF(icon_arched_line_offset, icon_arched_line_offset,
                                        icon_arched_line_rect_size, icon_arched_line_rect_size)
-        icon_rotation_timeline_frame = int(self.icon_rotation_timeline.currentFrame() / self.TIMELINE_ACCURACY_BOOST)
-        icon_arched_line_start_angle = (-107 - icon_rotation_timeline_frame) * 16
+        icon_arched_line_start_angle = (-107 - self.icon_rotation_timeline.currentFrame()) * 16
         icon_arched_line_span_angle = -326 * 16
 
         painter.setPen(QPen(QColor('#000000'), icon_line_width, cap=Qt.PenCapStyle.FlatCap))
         painter.drawArc(icon_arched_line_rect, icon_arched_line_start_angle, icon_arched_line_span_angle)
 
         # Calculations for outer circle / outer half circles
-        outer_circle_pen_width = self.outer_circle_width_timeline.currentFrame() / self.TIMELINE_ACCURACY_BOOST
+        outer_circle_pen_width = self.outer_circle_width_timeline.currentFrame() / 10
         outer_circle_line_width = 4.0
         outer_circle_rect_size = self.fixed_size - outer_circle_line_width
         outer_circle_offset = outer_circle_line_width / 2
@@ -98,15 +96,11 @@ class ToggleButton(QWidget):
 
         # State TURNING_ON
         if self.state == ToggleButtonState.TURNING_ON:
-            # Set current color
-            if self.current_color != self.ACCENT_COLOR_TURNING_ON:
-                self.current_color = self.ACCENT_COLOR_TURNING_ON
-
             # Draw outer half circles
             pen_color = QColor(self.ACCENT_COLOR_TURNING_ON.red(), self.ACCENT_COLOR_TURNING_ON.green(),
                                self.ACCENT_COLOR_TURNING_ON.blue(), self.outer_circle_opacity_timeline.currentFrame())
-            outer_half_circle_1_start_angle = -95 * 16 - self.outer_circle_rotation_timeline.currentFrame()
-            outer_half_circle_2_start_angle = 85 * 16 - self.outer_circle_rotation_timeline.currentFrame()
+            outer_half_circle_1_start_angle = (-95 - self.outer_circle_rotation_timeline.currentFrame()) * 16
+            outer_half_circle_2_start_angle = (85 - self.outer_circle_rotation_timeline.currentFrame()) * 16
             outer_half_circle_span_angle = 170 * 16
 
             painter.setPen(QPen(pen_color, outer_circle_pen_width))
@@ -115,11 +109,6 @@ class ToggleButton(QWidget):
 
         # State ON or OFF
         else:
-            # Set current color if turned on and not already set
-            if self.state == ToggleButtonState.ON:
-                if self.current_color != self.ACCENT_COLOR_ON:
-                    self.current_color = self.ACCENT_COLOR_ON
-
             # Draw outer circle if width not 0
             if self.outer_circle_width_timeline.currentFrame() > 0:
                 pen_color = QColor(self.current_color.red(), self.current_color.green(),
@@ -171,6 +160,12 @@ class ToggleButton(QWidget):
                 self.start_animation_backward()
             elif state == ToggleButtonState.TURNING_ON:
                 self.start_animation_forward()
+
+        # Set current color of the outer circle
+        if state == ToggleButtonState.ON:
+            self.current_color = self.ACCENT_COLOR_ON
+        elif state == ToggleButtonState.TURNING_ON:
+            self.current_color = self.ACCENT_COLOR_TURNING_ON
 
         # Emit state changed signal
         self.stateChanged.emit(self.state)
