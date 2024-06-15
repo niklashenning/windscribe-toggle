@@ -134,15 +134,17 @@ class ToggleButton(QWidget):
         painter.end()
 
     def mousePressEvent(self, event):
-        if self.state == ToggleButtonState.OFF:
-            # Currently turned off -> turn on
-            self.setState(ToggleButtonState.TURNING_ON)
-        else:
-            # Currently turned on or turning on -> turn off
-            self.setState(ToggleButtonState.OFF)
+        # Check if button is left mouse button
+        if event.button() == Qt.MouseButton.LeftButton:
+            if self.state == ToggleButtonState.OFF:
+                # Currently turned off -> turn on
+                self.setState(ToggleButtonState.TURNING_ON)
+            else:
+                # Currently turned on or turning on -> turn off
+                self.setState(ToggleButtonState.OFF)
 
-        # Emit clicked signal
-        self.clicked.emit()
+            # Emit clicked signal
+            self.clicked.emit()
 
     def getState(self) -> ToggleButtonState:
         return self.state
