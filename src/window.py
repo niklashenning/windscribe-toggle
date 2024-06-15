@@ -1,7 +1,7 @@
 import random
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout
 from PyQt6.QtCore import QTimer
-from toggle_button import ToggleButton, ToggleButtonState
+from togglebutton import ToggleButton, ToggleButtonState
 
 
 class Window(QMainWindow):
