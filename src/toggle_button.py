@@ -1,7 +1,7 @@
 from PyQt6.QtGui import QPainter, QPen, QColor, QBrush
 from PyQt6.QtCore import QPointF, Qt, QTimeLine, QEasingCurve, QRectF, pyqtSignal
 from PyQt6.QtWidgets import QWidget
-from toggle_button_state import ToggleButtonState
+from enums import ToggleButtonState
 from utils import Utils
 
 
