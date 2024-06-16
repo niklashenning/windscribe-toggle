@@ -42,17 +42,20 @@ class ToggleButton(QWidget):
         self.outer_circle_width_timeline = QTimeLine(250, self)
         self.outer_circle_width_timeline.setEasingCurve(QEasingCurve.Type.Linear)
         self.outer_circle_width_timeline.setFrameRange(0, 4 * 10)
+        self.outer_circle_width_timeline.frameChanged.connect(self.update)
 
         # Init timeline for the outer circle opacity animation with a frame range
         # of 0 - 255 to animate the opacity of an RGBA color
         self.outer_circle_opacity_timeline = QTimeLine(200, self)
         self.outer_circle_opacity_timeline.setFrameRange(0, 255)
+        self.outer_circle_opacity_timeline.frameChanged.connect(self.update)
 
         # Init timeline for the icon rotation animation with a frame range
         # of 0 - 180 because the icon rotates 180 degrees
         self.icon_rotation_timeline = QTimeLine(200, self)
         self.icon_rotation_timeline.setEasingCurve(QEasingCurve.Type.Linear)
         self.icon_rotation_timeline.setFrameRange(0, 180)
+        self.icon_rotation_timeline.frameChanged.connect(self.update)
 
     def paintEvent(self, event):
         # Init painter and set render hint to Antialiasing for better quality
@@ -203,6 +206,9 @@ class ToggleButton(QWidget):
         self.icon_rotation_timeline.start()
 
     def start_animation_backward(self):
+        # Stop outer circle rotation timeline
+        self.outer_circle_rotation_timeline.stop()
+
         # Start outer circle animation timelines in backward mode
         self.outer_circle_width_timeline.setDirection(QTimeLine.Direction.Backward)
         self.outer_circle_width_timeline.start()
