@@ -35,7 +35,7 @@ class ToggleButton(QWidget):
         self.outer_circle_rotation_timeline.setEasingCurve(QEasingCurve.Type.Linear)
         self.outer_circle_rotation_timeline.setFrameRange(0, 170)
         self.outer_circle_rotation_timeline.frameChanged.connect(self.update)
-        self.outer_circle_rotation_timeline.finished.connect(self.outer_circle_rotation_timeline.start)
+        self.outer_circle_rotation_timeline.finished.connect(self.outer_circle_rotation_timeline_finished)
 
         # Init timeline for the outer circle width animation with a frame range
         # of 0 - 40 to animate a width from 0.0 - 4.0 with steps of 0.1
@@ -220,3 +220,8 @@ class ToggleButton(QWidget):
         # Start icon animation timeline in backward mode
         self.icon_rotation_timeline.setDirection(QTimeLine.Direction.Backward)
         self.icon_rotation_timeline.start()
+
+    def outer_circle_rotation_timeline_finished(self):
+        # Restart outer circle rotation timeline if state not ON or OFF
+        if self.state == ToggleButtonState.TURNING_ON:
+            self.outer_circle_rotation_timeline.start()
